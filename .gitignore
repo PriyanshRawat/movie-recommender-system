@@ -1,0 +1,9 @@
+# Block Secrets
+.env
+
+# Block Python Junk
+__pycache__/
+*.pyc
+
+# Block Large Model Files (Too big for GitHub)
+artifacts/
