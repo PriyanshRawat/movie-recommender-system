@@ -1,109 +1,210 @@
-# **🎬 CineMatch AI: Hybrid Movie Recommendation System**
+# 🎬 MovieMatch AI
+### Hybrid Movie Recommendation System
 
-**CineMatch AI** is a full-stack machine learning application that provides personalized movie recommendations. It solves the "Cold Start" problem by utilizing a **Hybrid Filtering Architecture**, combining Content-Based Filtering (Tag/Genre analysis) with Collaborative Filtering (User-Item Interaction).
+MovieMatch AI is a **full-stack machine learning application** that delivers personalized movie recommendations using a **Hybrid Recommendation Architecture**. It combines **Content-Based Filtering** (movie metadata & NLP) with **Collaborative Filtering** (user–item interactions) to produce accurate, explainable, and cold-start–aware recommendations.
 
-## **📸 Demo**
+---
 
-*(Replace this line with a screenshot of your Streamlit Dashboard)*
+## ✨ Key Features
 
-## **✨ Key Features**
+- **🧠 Hybrid Recommendation Engine**  
+  Combines semantic similarity (overview, genres, cast, keywords) with collaborative user behavior.
 
-* **🧠 Hybrid Recommendation Engine:** Fuses metadata similarity (Plot, Genres, Cast) with user voting patterns to provide accurate suggestions.  
-* **🔍 Robust Fuzzy Search:** Implements TheFuzz logic to handle typos, partial queries, and misspellings (e.g., "shawshank redeption" → "The Shawshank Redemption").  
-* **📉 Cold Start Handling:** Automatically detects new users or unknown queries and falls back to a weighted "Trending Movies" algorithm.  
-* **⚡ High-Performance Backend:** Built on **FastAPI** with artifact caching for \<200ms inference time.  
-* **🎨 Interactive Frontend:** A modern, responsive UI built with **Streamlit**, featuring real-time movie posters via the **OMDb API**.  
-* **⚡ Smart Caching:** Implements TTL-based caching to minimize API calls and latency.
+- **🔍 Robust Fuzzy Search**  
+  Uses `TheFuzz` to tolerate typos and partial queries (e.g. `shawshank redeption → The Shawshank Redemption`).
 
-## **🛠️ Tech Stack**
+- **📉 Cold Start Handling**  
+  Automatically falls back to a popularity-based recommender when user or movie history is unavailable.
 
-* **Data Processing:** Pandas, NumPy, Scikit-Learn (Cosine Similarity, CountVectorizer)  
-* **Backend API:** FastAPI, Uvicorn  
-* **Frontend UI:** Streamlit  
-* **External API:** OMDb (Open Movie Database) for poster fetching  
-* **Utilities:** TheFuzz (String matching), Python-Dotenv
+- **⚡ High-Performance Backend**  
+  FastAPI backend with preloaded artifacts and sub-200ms inference.
 
-## **⚙️ How It Works (The Logic)**
+- **🎨 Interactive Frontend**  
+  Streamlit-based UI with live movie posters via OMDb API.
 
-The system uses a weighted average of two distinct models:
+- **⚡ Smart Caching**  
+  TTL-based caching to reduce API calls and improve latency.
 
-1. **Content-Based Model:**  
-   * Uses **Natural Language Processing (NLP)** on movie tags, genres, and overviews.  
-   * Vectorizes text data using CountVectorizer.  
-   * Calculates similarity using **Cosine Distance**.  
-2. **Collaborative Filtering Model:**  
-   * Constructs a **User-Item Matrix** from thousands of user ratings.  
-   * Identifies voting patterns between movies based on user behavior.  
-3. The Hybrid Formula:  
-   $$FinalScore \= \\alpha \\times (ContentScore) \+ (1 \- \\alpha) \\times (CollaborativeScore)$$  
-   * *Alpha (*$\\alpha$*)* is a tunable hyperparameter (default: 0.45) allowing the user to balance between "Content Similarity" and "User Trends".
+---
 
-## **📂 Project Structure**
+## 🛠️ Tech Stack
 
-├── artifacts/             \# Generated model files (Ignored by Git)  
-│   ├── movies\_df.pkl      \# Processed Metadata  
-│   ├── similarity.pkl     \# Content Similarity Matrix  
-│   ├── trending.pkl       \# Top rated movies for fallback  
-│   └── ...  
-├── artifacts\_generation.ipynb  \# Notebook to train models & generate artifacts  
-├── main.py                \# FastAPI Backend Application  
-├── frontend.py            \# Streamlit Frontend Interface  
-├── requirements.txt       \# Python Dependencies  
-├── .env                   \# API Keys (Ignored by Git)  
-└── README.md              \# Project Documentation
+**Data & ML**
+- Pandas, NumPy
+- Scikit-Learn (TF-IDF / CountVectorizer, Cosine Similarity)
 
-## **🚀 Installation & Setup**
+**Backend**
+- FastAPI, Uvicorn
 
-### **1\. Clone the Repository**
+**Frontend**
+- Streamlit
 
-git clone \[https://github.com/YOUR\_USERNAME/movie-recommender-system.git\](https://github.com/YOUR\_USERNAME/movie-recommender-system.git)  
+**External APIs**
+- OMDb API (movie posters)
+
+**Utilities**
+- TheFuzz (fuzzy string matching)
+- python-dotenv (environment management)
+
+---
+
+## ⚙️ How It Works
+
+MovieMatch AI uses a **late-fusion hybrid recommender**.
+
+### 1️⃣ Content-Based Model
+- NLP over movie overview, genres, keywords, cast, and director
+- Vectorization using TF-IDF / CountVectorizer
+- Similarity computed via cosine similarity
+
+### 2️⃣ Collaborative Filtering Model
+- Item–item similarity using MovieLens ratings
+- Mean-centered ratings to capture like/dislike signals
+
+### 3️⃣ Hybrid Scoring Formula
+
+$$
+FinalScore = \alpha \times ContentScore + (1 - \alpha) \times CollaborativeScore
+$$
+
+- `α` is tunable (default: `0.45`)
+- Higher α → semantic similarity
+- Lower α → crowd preference
+
+---
+
+## 📂 Project Structure
+
+```text
+├── artifacts/                  # Generated model artifacts (ignored by Git)
+│   ├── movies_df.pkl
+│   ├── similarity.pkl
+│   ├── movie_similarity.npy
+│   ├── tmdb_to_ml.pkl
+│   ├── trending.pkl
+│   └── movie_idx_lookup.pkl
+│
+├── data/                       # Raw datasets (ignored by Git)
+├── model_generation.ipynb      # Training & artifact generation
+├── main.py                     # FastAPI backend
+├── frontend.py                 # Streamlit frontend
+├── requirements.txt            # Python dependencies
+├── .env                        # API keys (ignored by Git)
+└── README.md
+```
+
+---
+
+## ▶️ Running the Application
+
+### 1️⃣ Clone the Repository
+
+```bash
+git clone https://github.com/PriyanshRawat/movie-recommender-system.git
 cd movie-recommender-system
+```
 
-### **2\. Install Dependencies**
+---
 
-pip install \-r requirements.txt
+### 2️⃣ Install Dependencies
 
-### **3\. Generate Model Artifacts (Crucial\!)**
+```bash
+pip install -r requirements.txt
+```
 
-Because the similarity matrices are large, they are not stored on GitHub. You must generate them locally.
+---
 
-* Open Untitled5 (1).ipynb (or rename it to model\_generation.ipynb).  
-* **Run all cells.**  
-* Ensure the artifacts/ folder is created and populated with .pkl and .npy files.
+### 3️⃣ Data Setup (Required for Training)
 
-### **4\. Configure Environment Variables**
+Download datasets from Kaggle:
 
-Create a file named .env in the root directory and add your OMDb API key:
+- **[TMDB 5000 Movie Dataset](https://www.kaggle.com/datasets/tmdb/tmdb-movie-metadata)**  
+  `tmdb_5000_movies.csv`, `tmdb_5000_credits.csv`
 
-OMDB\_API\_KEY=your\_actual\_api\_key\_here
+- **[MovieLens Latest Small](https://www.kaggle.com/datasets/shubhammehta21/movie-lens-small-latest-dataset)** 
+  `ratings.csv`, `links.csv`
 
-*(Get a free key at [omdbapi.com](http://www.omdbapi.com/apikey.aspx))*
+Place all files into:
 
-## **🏃‍♂️ How to Run**
+```text
+data/
+```
 
-You need to run the Backend and Frontend in separate terminals.
+---
 
-**Terminal 1: Start Backend**
+### 4️⃣ Generate Model Artifacts
 
-python \-m uvicorn main:app \--reload
+Artifacts are not stored on GitHub due to size.
 
-*The API will start at http://127.0.0.1:8000*
+```bash
+jupyter notebook movie_recommender_system.ipynb
+```
 
-**Terminal 2: Start Frontend**
+Run all cells and confirm `artifacts/` is populated.
 
-python \-m streamlit run frontend.py
+---
 
-*The App will open in your browser at http://localhost:8501*
+### 5️⃣ Configure Environment Variables
 
-## **🔮 Future Improvements**
+Create a `.env` file:
 
-* \[ \] Dockerize the application for easier deployment.  
-* \[ \] Implement Deep Learning (Neural Collaborative Filtering).  
-* \[ \] Add User Authentication to save personal watchlists.
+```env
+OMDB_API_KEY=your_actual_api_key_here
+```
 
-## **🤝 Contributing**
+Get a free key from https://www.omdbapi.com/
 
-Contributions are welcome\! Please fork the repo and submit a Pull Request.
+---
 
-Author: \[Your Name\]  
-Connect: \[Your LinkedIn/GitHub Link\]
+### 6️⃣ Start the Backend
+
+```bash
+python -m uvicorn main:app --reload
+```
+
+Backend runs at:
+
+```text
+http://127.0.0.1:8000
+```
+
+---
+
+### 7️⃣ Start the Frontend
+
+```bash
+python -m streamlit run frontend.py
+```
+
+Frontend opens at:
+
+```text
+http://localhost:8501
+```
+
+---
+
+## 🔮 Future Improvements
+
+- [ ] Dockerization
+- [ ] Neural Collaborative Filtering
+- [ ] User authentication & profiles
+- [ ] Diversity-aware re-ranking
+- [ ] Online feedback loop
+
+---
+
+## 🤝 Contributing
+
+1. Fork the repository
+2. Create a feature branch
+3. Submit a Pull Request
+
+---
+
+## 👤 Author
+
+**Priyansh Rawat**
+
+If you find this project useful, consider giving it a ⭐ on GitHub.
+

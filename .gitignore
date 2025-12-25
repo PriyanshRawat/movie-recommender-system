@@ -7,3 +7,5 @@ __pycache__/
 
 # Block Large Model Files (Too big for GitHub)
 artifacts/
+
+data/
