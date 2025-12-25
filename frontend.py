@@ -5,27 +5,22 @@ import urllib.parse
 import os
 from dotenv import load_dotenv
 
-# -----------------------------------------------------------------------------
-# CONFIGURATION
-# -----------------------------------------------------------------------------
 # Load environment variables (Create a .env file with OMDB_API_KEY=your_key)
 load_dotenv()
 
 API_URL = "http://127.0.0.1:8000/recommend"
 
-# 👇 PASTE YOUR OMDb KEY HERE (Or use .env file)
+# PASTE YOUR OMDb KEY HERE (Or use .env file)
 OMDB_API_KEY = os.getenv("OMDB_API_KEY", "a0deaf55")
 
 st.set_page_config(
     page_title="MovieMatch AI",
     page_icon="🍿",
     layout="wide",
-    initial_sidebar_state="collapsed" # Hides sidebar by default
+    initial_sidebar_state="collapsed"
 )
 
-# -----------------------------------------------------------------------------
 # CUSTOM CSS (Modern Dark Theme)
-# -----------------------------------------------------------------------------
 st.markdown("""
     <style>
     /* Hide Sidebar completely */
@@ -62,24 +57,36 @@ st.markdown("""
     </style>
 """, unsafe_allow_html=True)
 
-# -----------------------------------------------------------------------------
-# HELPER FUNCTIONS
-# -----------------------------------------------------------------------------
-# 1. Add this decorator above the function
+
 @st.cache_data(ttl=3600, show_spinner=False)
-def fetch_poster_omdb(movie_title):
+def fetch_omdb_data(movie_title):
+    """
+    Fetches both the Poster and IMDb Rating from OMDb.
+    Returns: (poster_url, imdb_rating)
+    """
+    # Default values in case API fails
+    safe_title = urllib.parse.quote(movie_title)
+    poster_url = f"https://placehold.co/400x600/2c3e50/ffffff?text={safe_title}&font=roboto"
+    imdb_rating = "N/A"
+
     if OMDB_API_KEY and OMDB_API_KEY != "PASTE_YOUR_KEY_HERE":
         try:
             url = f"http://www.omdbapi.com/?t={movie_title}&apikey={OMDB_API_KEY}"
             response = requests.get(url)
             data = response.json()
-            if data.get('Response') == 'True' and data.get('Poster') != 'N/A':
-                return data.get('Poster')
+            
+            if data.get('Response') == 'True':
+                # Get Poster
+                if data.get('Poster') != 'N/A':
+                    poster_url = data.get('Poster')
+                # Get Rating
+                if data.get('imdbRating') != 'N/A':
+                    imdb_rating = data.get('imdbRating')
+                    
         except Exception:
             pass 
 
-    safe_title = urllib.parse.quote(movie_title)
-    return f"https://placehold.co/400x600/2c3e50/ffffff?text={safe_title}&font=roboto"
+    return poster_url, imdb_rating
 
 def get_recommendations(title, genre, alpha=0.45):
     try:
@@ -92,13 +99,8 @@ def get_recommendations(title, genre, alpha=0.45):
     except:
         return None
 
-# def score_to_stars(score):
-#     stars = int(score * 5)
-#     return "⭐" * stars if stars > 0 else "⭐"
 
-# -----------------------------------------------------------------------------
 # MAIN APP LAYOUT
-# -----------------------------------------------------------------------------
 
 # 1. Header
 st.markdown('<p class="big-font">MovieMatch AI</p>', unsafe_allow_html=True)
@@ -109,7 +111,7 @@ st.markdown('<p class="subtitle">Discover your next favorite movie.</p>', unsafe
 col1, col2, col3 = st.columns([3, 1, 1])
 
 with col1:
-    search_query = st.text_input("Search Movie", placeholder="Enter movie name (e.g. Inception)...", label_visibility="collapsed")
+    search_query = st.text_input("Search Movie", placeholder="Enter movie name (e.g. Iron Man)...", label_visibility="collapsed")
 
 with col2:
     # Genre list matching your backend logic
@@ -162,23 +164,27 @@ if search_btn or search_query == "":
             for i, movie in enumerate(recommendations):
                 with cols[i % 5]:
                     with st.container():
-                        # Poster
-                        poster_url = fetch_poster_omdb(movie['title'])
+                        # 1. Fetch Poster AND Rating
+                        poster_url, imdb_rating = fetch_omdb_data(movie['title'])
                         st.image(poster_url, use_container_width=True)
                         
-                        # Title
+                        # 2. Title
                         title = movie['title']
-                        if len(title) > 22: title = title[:20] + "..."
+                        if len(title) > 20: title = title[:17] + "..."
                         st.markdown(f"**{title}**")
                         
-                        # Rating
-                        #stars = score_to_stars(movie['score'])
-                        st.caption(f"{movie['score']:.2f}")
-                        
-                        # Popover
+                        # 3. IMDb Rating (Yellow Star)
+                        if imdb_rating != "N/A":
+                            st.markdown(f"⭐ **{imdb_rating}** <span style='color:grey; font-size:0.8em'>/ 10</span>", unsafe_allow_html=True)
+                        else:
+                            st.caption("No Rating")
+
+                        # 4. Popover Details
                         with st.popover("Details"):
                             st.markdown(f"**{movie['title']}**")
                             st.info(f"Match Score: {movie['score']:.4f}")
+                            if imdb_rating != "N/A":
+                                st.success(f"IMDb Rating: {imdb_rating}")
                             st.text(f"TMDB ID: {movie['tmdb_id']}")
 
     elif search_query:
