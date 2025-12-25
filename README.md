@@ -20,7 +20,10 @@ MovieMatch AI is a **full-stack machine learning application** that delivers per
   FastAPI backend with preloaded artifacts and sub-200ms inference.
 
 - **🎨 Interactive Frontend**  
-  Streamlit-based UI with live movie posters via OMDb API.
+  Streamlit-based UI with live movie posters and IMDb ratings via OMDb API.
+
+- **⭐ IMDb Ratings Display**  
+  Movie ratings fetched from OMDb API and displayed below each poster.
 
 - **⚡ Smart Caching**  
   TTL-based caching to reduce API calls and improve latency.
@@ -40,7 +43,7 @@ MovieMatch AI is a **full-stack machine learning application** that delivers per
 - Streamlit
 
 **External APIs**
-- OMDb API (movie posters)
+- OMDb API (movie posters and IMDb ratings)
 
 **Utilities**
 - TheFuzz (fuzzy string matching)
