@@ -1,48 +1,63 @@
 import pickle
+import urllib.parse
 import numpy as np
 import pandas as pd
 import re
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, Query, Request
+from fastapi.middleware.cors import CORSMiddleware
 from contextlib import asynccontextmanager
 from thefuzz import process, fuzz
+from slowapi import Limiter, _rate_limit_exceeded_handler
+from slowapi.errors import RateLimitExceeded
+from slowapi.util import get_remote_address
 
 artifacts = {}
 poster_lookup = {}
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
+    # Fail fast: any missing/corrupt artifact aborts startup with the real error,
+    # instead of silently leaving `artifacts` empty and 500-ing on every request.
     print("Loading model artifacts...")
+    with open("artifacts/movies_df.pkl", "rb") as f:
+        artifacts['movies_df'] = pickle.load(f)
+    with open("artifacts/similarity.pkl", "rb") as f:
+        artifacts['similarity'] = pickle.load(f)
+    with open("artifacts/tmdb_to_ml.pkl", "rb") as f:
+        artifacts['tmdb_to_ml'] = pickle.load(f)
+    with open("artifacts/movie_id_search.pkl", "rb") as f:
+        artifacts['movie_id_search'] = pickle.load(f)
+
+    # Trending is optional: cold start degrades gracefully without it
     try:
-        with open("artifacts/movies_df.pkl", "rb") as f:
-            artifacts['movies_df'] = pickle.load(f)
-        with open("artifacts/similarity.pkl", "rb") as f:
-            artifacts['similarity'] = pickle.load(f)
-        with open("artifacts/tmdb_to_ml.pkl", "rb") as f:
-            artifacts['tmdb_to_ml'] = pickle.load(f)
-        with open("artifacts/movie_id_search.pkl", "rb") as f:
-            artifacts['movie_id_search'] = pickle.load(f)
-            
-        # Try loading trending, handle if missing
-        try:
-            with open("artifacts/trending.pkl", "rb") as f:
-                artifacts['trending'] = pickle.load(f)
-        except FileNotFoundError:
-            print("Warning: trending.pkl not found. Cold start will be empty.")
-            artifacts['trending'] = []
+        with open("artifacts/trending.pkl", "rb") as f:
+            artifacts['trending'] = pickle.load(f)
+    except FileNotFoundError:
+        print("Warning: trending.pkl not found. Cold start will be empty.")
+        artifacts['trending'] = []
 
-        loaded_sim = np.load("artifacts/movie_similarity.npy", allow_pickle=True)
-        if loaded_sim.ndim == 0:
-            artifacts['movie_similarity'] = loaded_sim.item()
-        else:
-            artifacts['movie_similarity'] = loaded_sim
+    loaded_sim = np.load("artifacts/movie_similarity.npy", allow_pickle=True)
+    if loaded_sim.ndim == 0:
+        artifacts['movie_similarity'] = loaded_sim.item()
+    else:
+        artifacts['movie_similarity'] = loaded_sim
 
-    except Exception as e:
-        print(f"Error loading artifacts: {e}")
-        
     yield
     artifacts.clear()
 
+limiter = Limiter(key_func=get_remote_address)
 app = FastAPI(lifespan=lifespan)
+app.state.limiter = limiter
+app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
+
+# Only the local Streamlit frontend may call this API from a browser context.
+# Update allow_origins if you ever deploy the frontend elsewhere.
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["http://localhost:8501", "http://127.0.0.1:8501"],
+    allow_methods=["GET"],
+    allow_headers=[],
+)
 
 #Helper Functions
 
@@ -98,7 +113,16 @@ def _content_candidates(user_input, top_k=50):
     return movie_index, sorted_similar_movies
 
 @app.get("/recommend")
-def recommend(title: str = "", alpha: float = 0.45, genre: str = "All"):
+@limiter.limit("30/minute")
+def recommend(
+    request: Request,
+    # max_length caps the input before it hits fuzzy matching over every title (DoS guard);
+    # longest real movie titles are well under 200 chars.
+    title: str = Query("", max_length=200),
+    # alpha is a blend weight; anything outside [0, 1] produces nonsensical scores.
+    alpha: float = Query(0.45, ge=0.0, le=1.0),
+    genre: str = Query("All", max_length=50),
+):
     movies_df = artifacts['movies_df']
     
     base_idx = None
@@ -126,7 +150,7 @@ def recommend(title: str = "", alpha: float = 0.45, genre: str = "All"):
                     "title": m['title'], 
                     "score": float(m.get('vote_average', 0))/10, 
                     "tmdb_id": int(m['tmdbId']),  # <--- FIXED: Changed 'tmdb_id' to 'tmdbId'
-                    "poster_url": poster_lookup.get(m['tmdbId'], f"https://placehold.co/400x600/2c3e50/ffffff?text={m['title'].replace(' ', '+')}") # <--- FIXED HERE TOO
+                    "poster_url": poster_lookup.get(m['tmdbId'], f"https://placehold.co/400x600/2c3e50/ffffff?text={urllib.parse.quote_plus(str(m['title']))}")
                 } for m in trending[:10]
             ]
         }
@@ -150,7 +174,7 @@ def recommend(title: str = "", alpha: float = 0.45, genre: str = "All"):
         
         poster_url = poster_lookup.get(candidate.tmdbId)
         if not poster_url:
-            safe_title = candidate.title.replace(" ", "+")
+            safe_title = urllib.parse.quote_plus(str(candidate.title))
             poster_url = f"https://placehold.co/400x600/2c3e50/ffffff?text={safe_title}"
 
         rescored.append({

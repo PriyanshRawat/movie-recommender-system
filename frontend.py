@@ -10,8 +10,9 @@ load_dotenv()
 
 API_URL = "http://127.0.0.1:8000/recommend"
 
-# PASTE YOUR OMDb KEY HERE (Or use .env file)
-OMDB_API_KEY = os.getenv("OMDB_API_KEY", "a0deaf55")
+# Set OMDB_API_KEY in a .env file (free key: https://www.omdbapi.com/apikey.aspx).
+# No key baked into source: without one the app degrades to placeholder posters / "No Rating".
+OMDB_API_KEY = os.getenv("OMDB_API_KEY", "")
 
 st.set_page_config(
     page_title="MovieMatch AI",
@@ -69,10 +70,14 @@ def fetch_omdb_data(movie_title):
     poster_url = f"https://placehold.co/400x600/2c3e50/ffffff?text={safe_title}&font=roboto"
     imdb_rating = "N/A"
 
-    if OMDB_API_KEY and OMDB_API_KEY != "PASTE_YOUR_KEY_HERE":
+    if OMDB_API_KEY:
         try:
-            url = f"http://www.omdbapi.com/?t={movie_title}&apikey={OMDB_API_KEY}"
-            response = requests.get(url)
+            # params dict -> requests URL-encodes the title (handles &, #, etc.)
+            response = requests.get(
+                "https://www.omdbapi.com/",
+                params={"t": movie_title, "apikey": OMDB_API_KEY},
+                timeout=5,
+            )
             data = response.json()
             
             if data.get('Response') == 'True':
@@ -92,11 +97,11 @@ def get_recommendations(title, genre, alpha=0.45):
     try:
         # If title is empty, we send empty string, backend handles trending
         params = {"title": title, "alpha": alpha, "genre": genre}
-        response = requests.get(API_URL, params=params)
+        response = requests.get(API_URL, params=params, timeout=10)
         if response.status_code == 200:
             return response.json()
         return None
-    except:
+    except requests.RequestException:
         return None
 
 

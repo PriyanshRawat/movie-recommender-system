@@ -1,0 +1,15 @@
+services:
+  backend:
+    image: priyanshrawat/movie-recommender-backend
+    ports:
+      - "8000:8000"
+
+  frontend:
+    image: priyanshrawat/movie-recommender-frontend
+    ports:
+      - "8501:8501"
+    environment:
+      - API_URL=http://backend:8000/recommend
+      - OMDB_API_KEY=${OMDB_API_KEY:-}
+    depends_on:
+      - backend

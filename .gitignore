@@ -9,3 +9,6 @@ __pycache__/
 #artifacts/
 
 data/
+.claude/
+.vscode/
+CLAUDE.md
