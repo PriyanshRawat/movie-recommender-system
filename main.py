@@ -59,6 +59,16 @@ app.add_middleware(
     allow_headers=[],
 )
 
+#Health check / landing route -- lets Render confirm the service is up,
+# and shows a friendly message instead of a 404 if you open the URL in a browser.
+@app.get("/")
+def health():
+    return {
+        "status": "ok",
+        "service": "MovieMatch AI backend",
+        "try": "/recommend?title=Inception",
+    }
+
 #Helper Functions
 
 def cf_similarity(tmdb_id_1, tmdb_id_2):

@@ -4,4 +4,5 @@ COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 COPY frontend_v2.py .
 EXPOSE 8501
-CMD ["streamlit", "run", "frontend_v2.py", "--server.address=0.0.0.0", "--server.port=8501"]
+# Shell form so ${PORT} (set by Render) is honoured; falls back to 8501 locally.
+CMD streamlit run frontend_v2.py --server.address=0.0.0.0 --server.port=${PORT:-8501} --server.headless=true

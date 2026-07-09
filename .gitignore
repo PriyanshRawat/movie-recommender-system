@@ -12,3 +12,5 @@ data/
 .claude/
 .vscode/
 CLAUDE.md
+artifacts_slim/
+DEPLOY_RENDER.md
