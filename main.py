@@ -62,6 +62,7 @@ app.add_middleware(
 #Health check / landing route -- lets Render confirm the service is up,
 # and shows a friendly message instead of a 404 if you open the URL in a browser.
 @app.get("/")
+@app.get("/healthz")
 def health():
     return {
         "status": "ok",

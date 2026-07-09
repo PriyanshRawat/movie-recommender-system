@@ -1,6 +1,9 @@
 # 🎬 MovieMatch AI
 ### Hybrid Movie Recommendation System
 
+> ### ▶️ **[Live Demo → movie-recommender-frontend-ex82.onrender.com](https://movie-recommender-frontend-ex82.onrender.com/)**
+> ⏳ _Hosted on Render's free tier — the first load after a period of inactivity can take ~30–60 seconds to wake up, then it runs fast._
+
 MovieMatch AI is a **full-stack machine learning application** that delivers personalized movie recommendations using a **Hybrid Recommendation Architecture**. It combines **Content-Based Filtering** (movie metadata & NLP) with **Collaborative Filtering** (user–item interactions) to produce accurate, explainable, and cold-start–aware recommendations.
 
 The whole stack is **Dockerized** .
